@@ -85,8 +85,6 @@ function DrawPiechart(locationArray)
     }
 });
 
-
-
 }
 
  function GetCurrentUSer(){
@@ -118,7 +116,7 @@ call.fail(function (jqXHR, textStatus, errorThrown) {
 
 function GetLocations()
 {
- var locationArray=[]; 
+ var locationArray=new Array(); 
   var call = jQuery.ajax({
     url:Contxturl+"/_api/web/lists/getByTitle('SAT_Locations')/Items/?$select=Location,ID",
     type: "GET",
@@ -225,7 +223,7 @@ function GetLocations()
   
   alert("Location is : "+opt);
   alert("name"+CurntUser);  
-  if(IsUsrinList=='')
+  if(IsUsrinList==''||IsUsrinList==null)
   {
       const spOpts: ISPHttpClientOptions = {
         body: `{ Locations: '${opt}', Voted_By: '${CurntUser}' }`
