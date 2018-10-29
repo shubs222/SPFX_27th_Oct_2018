@@ -15,6 +15,8 @@ require('bootstrap');
 require('chart.js');
 var CurntUser='';
 var IsUsrinList;
+var Myfunction;
+var a;
 import * as pnp from 'sp-pnp-js';
 import Chart from 'chart.js';
 import { CurrentUser } from 'sp-pnp-js/lib/sharepoint/siteusers';
@@ -47,7 +49,7 @@ export default class VotingSystemWebPart extends BaseClientSideWebPart<IVotingSy
       </div>
     </div>`;
       this.Load();
-      
+
   }
 Load(){
   var Contxturl=this.context.pageContext.web.absoluteUrl;
@@ -63,7 +65,7 @@ Load(){
   jQuery(document).ready(function(){
   jQuery('#mainDiv').ready(GetCurrentUSer(),GetLocations());
 
-function DrawPiechart(locationArray)
+function DrawPiechart(locationArray,VotesArray)
 {
  
   var ctxP:any = document.getElementById("pieChart")
@@ -71,12 +73,12 @@ function DrawPiechart(locationArray)
   var myPieChart = new Chart(ctxP, {
     type: 'pie',
     data: {
-        labels: [locationArray],
+        labels: locationArray,
         datasets: [
             {
-                data: [300, 50, 100, 40, 120],
-                backgroundColor: ["#F7464A", "#46BFBD", "#FDB45C", "#949FB1", "#4D5360"],
-                hoverBackgroundColor: ["#FF5A5E", "#5AD3D1", "#FFC870", "#A8B3C5", "#616774"]
+                data: VotesArray,
+                backgroundColor: ["#F7464A", "#46BFBD", "#FDB45C", "#949FB1"],
+                hoverBackgroundColor: ["#FF5A5E", "#5AD3D1", "#FFC870", "#A8B3C5"]
             }
         ]
     },
@@ -100,7 +102,7 @@ function DrawPiechart(locationArray)
 call.done(function (data, textStatus, jqXHR) {
    CurntUser = data.d.Title;
     alert(CurntUser);
-    GetListItem();
+    Myfunction();
     
 });
 call.fail(function (jqXHR, textStatus, errorThrown) {
@@ -116,7 +118,8 @@ call.fail(function (jqXHR, textStatus, errorThrown) {
 
 function GetLocations()
 {
- var locationArray=new Array(); 
+  var locationArray=new Array(); 
+ 
   var call = jQuery.ajax({
     url:Contxturl+"/_api/web/lists/getByTitle('SAT_Locations')/Items/?$select=Location,ID",
     type: "GET",
@@ -131,15 +134,15 @@ function GetLocations()
           jQuery.each(data.d.results, function (key, value) {
             AddButton.append(`<div class="col-sm-3"> <div class="panel panel-default" style="border-radius: 10%;border-top-left-radius: 10%;""><div class="panel-body center bg-primary" style=" border-top-left-radius: 10%; border-top-right-radius: 10%; "><p class="bg-primary" style="text-align:center;">${value.Location}</p></div><div class=""panel-body center bg-primary" style="margin-top: 4%;margin-left: 20%;margin-bottom: 4%; margin-right: 15%;"><button href="#" class="Likebtn btn btn-info btn-lg center" id="${value.Location}"> <span class="glyphicon glyphicon-thumbs-down center" id="${value.Location}sp">Like</span></button></div></div> </div>`);
             locationArray.push(value.Location);
-          });
-          
-      });
+          }); 
+          getVotes(locationArray);
+      }); 
     call.fail(function (jqXHR, textStatus, errorThrown) {
     var response = JSON.parse(jqXHR.responseText);
     var message = response ? response.error.message.value : textStatus;
     alert("Call failed. Error: " + message);
     }); 
-    DrawPiechart(locationArray);
+    
 
     jQuery(document).on("click", ".Likebtn" , function() {
 
@@ -162,21 +165,60 @@ function GetLocations()
         jQuery("#VoteButton").attr("disabled","disabled");
         
         opt='';
-      }       
-     
+      } 
 
    });
+
   
 
   }
+  function getVotes(locationArray): any   
+  {
+    var VotesArray=new Array();
+  
+      var call = jQuery.ajax({
+        url: Contxturl+`/_api/web/lists/getByTitle('SAT_Votes')/Items/?$select=Voted_By,Locations,ID`,
+        type: "GET",
+        dataType: "json",
+        headers: {
+            Accept: "application/json;odata=verbose"
+        }
+      });
+      
+      
+       call.done(function (data, textStatus, jqXHR) {
+       
+          for(var i=0;i<locationArray.length;i++)
+          {
+            VotesArray.push(data.d.results.filter(value => value.Locations === locationArray[i]).length);
+            if(VotesArray.length===locationArray.length)
+            {
+              break;
+            }
+          } 
+          
+        });
+       
+      
+      call.fail(function (jqXHR, textStatus, errorThrown) {
+      var response = JSON.parse(jqXHR.responseText);
+      var message = response ? response.error.message.value : textStatus;
+      alert("Call failed. Error: " + message);
+      });
+    
+    DrawPiechart(locationArray,VotesArray);
+    
+    }
 
-  function GetListItem()
+
+  Myfunction=function GetListItem()
   {
     var url=Contxturl+`/_api/web/lists/getByTitle('SAT_Votes')/Items/?$select=Voted_By,Locations,ID&$filter=(Voted_By eq '${CurntUser}')`;
     alert("come"+CurntUser);
     var call = jQuery.ajax({
       url:url,
       type: "GET",
+      
       dataType: "json",
       headers: {
           Accept: "application/json;odata=verbose"
@@ -184,7 +226,7 @@ function GetLocations()
       });
         call.done(function (data, textStatus, jqXHR) {
            
-              if(!(data.d.results[0].location==''))
+              if(!(data.d.results[0].Locations==''))
               {
                 IsUsrinList=data.d.results[0].ID;
               alert(data.d.results[0].Locations+"location selected by");
@@ -204,6 +246,8 @@ function GetLocations()
 
   }
 
+  
+
   });
  
   }
@@ -212,7 +256,10 @@ function GetLocations()
   
 }
 
- CreateItem(opt,CurntUser)
+
+
+
+CreateItem(opt,CurntUser)
 {
   alert("coming");
   if (Environment.type === EnvironmentType.Local) {
@@ -256,12 +303,24 @@ function GetLocations()
     {
       alert('comeupdate');
         pnp.sp.web.lists.getByTitle('SAT_Votes').items.getById(parseInt(IsUsrinList)).update({ Locations: opt});
-
+        alert("updated");
+      
     }
+    //Myfunction
+  this.update(); 
+
   }
+  
+} 
+update()
+{
 
+  setTimeout(
+    function() 
+    {
+      Myfunction();
+    }, 1000);
 }
-
 
 // private getListsInfo(CurntUser) {
 //   alert("asdasd"+CurntUser);
