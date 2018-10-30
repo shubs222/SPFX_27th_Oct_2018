@@ -34,19 +34,23 @@ export default class VotingSystemWebPart extends BaseClientSideWebPart<IVotingSy
     SPComponentLoader.loadScript(Scripturl);
     this.domElement.innerHTML = `
     <div class="mainDiv">
-      <div class="well well-lg">
+      <div class="well well-lg" background-image: url("D:/SpFrameWork/VotingSystem/background-hd-2015_111526235_269.jpg")>
+      <div class="panel panel-primary">
+      <div class="panel-heading">Polls</div>
+        
+       </div>
         <div class="row">  
           <div class="col-sm-12" id="ButtonDiv">    
-           
           </div>
             
              <button type="button" class="btn btn-primary" style="margin-left: 45%;" id="VoteButton" disabled="disabled">Vote</button>
           
-        <div> 
-        <canvas id="pieChart"></canvas>
-
-       
-      </div>
+          <div> 
+          
+          <canvas id="pieChart"></canvas> 
+       </div>
+    </div>
+    </div>
     </div>`;
       this.Load();
 
@@ -87,7 +91,7 @@ function DrawPiechart(locationArray,VotesArray)
     }
 });
 
-}
+} 
 
  function GetCurrentUSer(){
 
@@ -101,24 +105,24 @@ function DrawPiechart(locationArray,VotesArray)
 });
 call.done(function (data, textStatus, jqXHR) {
    CurntUser = data.d.Title;
-    alert(CurntUser);
+   
     Myfunction();
     
 });
 call.fail(function (jqXHR, textStatus, errorThrown) {
   var response = JSON.parse(jqXHR.responseText);
   var message = response ? response.error.message.value : textStatus;
-  alert("Call failed. Error: " + message);
+  
 });
   
 
  }
 
 
-
+ var locationArray=new Array(); 
 function GetLocations()
 {
-  var locationArray=new Array(); 
+  
  
   var call = jQuery.ajax({
     url:Contxturl+"/_api/web/lists/getByTitle('SAT_Locations')/Items/?$select=Location,ID",
@@ -135,12 +139,12 @@ function GetLocations()
             AddButton.append(`<div class="col-sm-3"> <div class="panel panel-default" style="border-radius: 10%;border-top-left-radius: 10%;""><div class="panel-body center bg-primary" style=" border-top-left-radius: 10%; border-top-right-radius: 10%; "><p class="bg-primary" style="text-align:center;">${value.Location}</p></div><div class=""panel-body center bg-primary" style="margin-top: 4%;margin-left: 20%;margin-bottom: 4%; margin-right: 15%;"><button href="#" class="Likebtn btn btn-info btn-lg center" id="${value.Location}"> <span class="glyphicon glyphicon-thumbs-down center" id="${value.Location}sp">Like</span></button></div></div> </div>`);
             locationArray.push(value.Location);
           }); 
-          getVotes(locationArray);
+          // getVotes(locationArray);
       }); 
     call.fail(function (jqXHR, textStatus, errorThrown) {
     var response = JSON.parse(jqXHR.responseText);
     var message = response ? response.error.message.value : textStatus;
-    alert("Call failed. Error: " + message);
+    
     }); 
     
 
@@ -161,7 +165,8 @@ function GetLocations()
         jQuery('#'+opt+"sp").removeClass('glyphicon-thumbs-up');
         jQuery('#'+opt+"sp").addClass('glyphicon-thumbs-down');
         jQuery('#'+opt+"sp").empty();
-        jQuery('#'+opt+"sp").text('Dislike');
+        jQuery('#'+opt+"sp").text('Like');
+
         jQuery("#VoteButton").attr("disabled","disabled");
         
         opt='';
@@ -191,11 +196,10 @@ function GetLocations()
           for(var i=0;i<locationArray.length;i++)
           {
             VotesArray.push(data.d.results.filter(value => value.Locations === locationArray[i]).length);
-            if(VotesArray.length===locationArray.length)
-            {
-              break;
-            }
+           
           } 
+        
+          DrawPiechart(locationArray,VotesArray);
           
         });
        
@@ -203,10 +207,10 @@ function GetLocations()
       call.fail(function (jqXHR, textStatus, errorThrown) {
       var response = JSON.parse(jqXHR.responseText);
       var message = response ? response.error.message.value : textStatus;
-      alert("Call failed. Error: " + message);
+     
       });
     
-    DrawPiechart(locationArray,VotesArray);
+    
     
     }
 
@@ -214,7 +218,7 @@ function GetLocations()
   Myfunction=function GetListItem()
   {
     var url=Contxturl+`/_api/web/lists/getByTitle('SAT_Votes')/Items/?$select=Voted_By,Locations,ID&$filter=(Voted_By eq '${CurntUser}')`;
-    alert("come"+CurntUser);
+   
     var call = jQuery.ajax({
       url:url,
       type: "GET",
@@ -229,19 +233,20 @@ function GetLocations()
               if(!(data.d.results[0].Locations==''))
               {
                 IsUsrinList=data.d.results[0].ID;
-              alert(data.d.results[0].Locations+"location selected by");
+              
               jQuery('#'+data.d.results[0].Locations+"sp").removeClass('glyphicon-thumbs-down');
               jQuery('#'+data.d.results[0].Locations+"sp").addClass('glyphicon-thumbs-up');
               jQuery('#'+data.d.results[0].Locations+"sp").empty();
               jQuery('#'+data.d.results[0].Locations+"sp").append('Liked');
               }
+              getVotes(locationArray);
             });
             
        
       call.fail(function (jqXHR, textStatus, errorThrown) {
       var response = JSON.parse(jqXHR.responseText);
       var message = response ? response.error.message.value : textStatus;
-      alert("Call failed. Error: " + message);
+     
       }); 
 
   }
@@ -261,15 +266,14 @@ function GetLocations()
 
 CreateItem(opt,CurntUser)
 {
-  alert("coming");
+  
   if (Environment.type === EnvironmentType.Local) {
     this.domElement.querySelector('#listdata').innerHTML = "Sorry this does not work in local workbench";
   } 
   else{
     
   
-  alert("Location is : "+opt);
-  alert("name"+CurntUser);  
+  
   if(IsUsrinList==''||IsUsrinList==null)
   {
       const spOpts: ISPHttpClientOptions = {
@@ -286,8 +290,8 @@ CreateItem(opt,CurntUser)
           });
 
           if (response.ok) {
-            alert("added");
-          
+           alert("Your poll is added");
+            Myfunction();
           }
           
           return;
@@ -301,26 +305,31 @@ CreateItem(opt,CurntUser)
     }
     else
     {
-      alert('comeupdate');
-        pnp.sp.web.lists.getByTitle('SAT_Votes').items.getById(parseInt(IsUsrinList)).update({ Locations: opt});
-        alert("updated");
-      
+     
+        pnp.sp.web.lists.getByTitle('SAT_Votes').items.getById(parseInt(IsUsrinList)).update({ Locations: opt})
+        .then(()=>{
+          alert("Your poll is Updated");
+          Myfunction();
+        }); 
+       
+       
     }
-    //Myfunction
-  this.update(); 
+    
+  // this.update(); 
 
   }
   
 } 
-update()
-{
+// update()
+// {
 
-  setTimeout(
-    function() 
-    {
-      Myfunction();
-    }, 1000);
-}
+//   setTimeout(
+//     function() 
+//     {
+
+//       Myfunction();
+//     }, 1000);
+// }
 
 // private getListsInfo(CurntUser) {
 //   alert("asdasd"+CurntUser);
